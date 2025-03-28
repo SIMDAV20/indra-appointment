@@ -8,7 +8,7 @@ export const handler = async (event: any) => {
 
       console.log(`📩 Recibido mensaje de SQS:`, message);
 
-      await AppointmentService.processAppointment(message);
+      await AppointmentService.processAppointment(message, message.countryISO);
     }
   } catch (error) {
     console.error('❌ Error en el handler:', error);

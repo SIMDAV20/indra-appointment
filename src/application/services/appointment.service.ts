@@ -21,6 +21,20 @@ const scheduleAppointmentUseCase = new ScheduleAppointmentUseCase(
 const eventBridgeService = new EventBridgeService();
 
 export class AppointmentService {
+  static async getAppointment(insuredId: string) {
+    try {
+      const appointment = await appointmentRepository.find(insuredId);
+      if (!appointment) {
+        console.log(`No se encontró cita para insuredId: ${insuredId}`);
+      }
+
+      return appointment;
+    } catch (error) {
+      console.error('Error en el servicio AppointmentService:', error);
+      throw new Error('No se pudo obtener la cita');
+    }
+  }
+
   static async scheduleAppointment(scheduleAppointmentDTO: AppointmentDTO) {
     try {
       const { insuredId, scheduleId, countryISO } = scheduleAppointmentDTO;

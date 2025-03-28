@@ -67,6 +67,9 @@ functions:
       - http:
           path: appointments
           method: post
+      - http:
+          path: appointments
+          method: get
 
   appointmentPe:
     handler: src/infrastructure/handlers/appointment_pe.handler
