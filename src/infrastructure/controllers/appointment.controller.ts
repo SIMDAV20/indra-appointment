@@ -1,7 +1,7 @@
 import { FastifyReply, FastifyRequest } from 'fastify';
 import {
-  ScheduleAppointmentDTO,
-  ScheduleAppointmentSchema,
+  AppointmentDTO,
+  AppointmentSchema,
 } from 'src/application/dtos/appointment.dto';
 import { AppointmentService } from 'src/application/services/appointment.service';
 import { formatInsuredId } from 'src/domain/values-objects/insured-id';
@@ -9,8 +9,7 @@ import { formatInsuredId } from 'src/domain/values-objects/insured-id';
 export class AppointmentController {
   static async scheduleAppointment(req: FastifyRequest, reply: FastifyReply) {
     try {
-      const validatedData: ScheduleAppointmentDTO =
-        ScheduleAppointmentSchema.parse(req.body);
+      const validatedData: AppointmentDTO = AppointmentSchema.parse(req.body);
 
       // Formatear insuredId para que tenga 5 dígitos con ceros a la izquierda
       validatedData.insuredId = formatInsuredId(validatedData.insuredId);
