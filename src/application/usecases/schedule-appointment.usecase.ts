@@ -16,7 +16,6 @@ export class ScheduleAppointmentUseCase {
   ): Promise<void> {
     const appointment = new Appointment(insuredId, scheduleId, countryISO);
     await this.appointmentRepository.save(appointment);
-    console.log('🚀 ~ ScheduleAppointmentUseCase ~ appointment:', appointment);
 
     const topicArn = 'arn:aws:sns:us-east-1:613859881893:RoutingSNSTopic';
 

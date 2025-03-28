@@ -26,6 +26,10 @@ export class AppointmentController {
   static async scheduleAppointment(req: FastifyRequest, reply: FastifyReply) {
     try {
       const validatedData: AppointmentDTO = AppointmentSchema.parse(req.body);
+      console.log(
+        '🚀 ~ AppointmentController ~ scheduleAppointment ~ validatedData:',
+        validatedData,
+      );
 
       validatedData.insuredId = formatInsuredId(validatedData.insuredId);
       await AppointmentService.scheduleAppointment(validatedData);

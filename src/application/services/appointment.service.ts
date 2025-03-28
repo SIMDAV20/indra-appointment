@@ -37,6 +37,10 @@ export class AppointmentService {
 
   static async scheduleAppointment(scheduleAppointmentDTO: AppointmentDTO) {
     try {
+      console.log(
+        '🚀 ~ AppointmentService ~ scheduleAppointment ~ scheduleAppointmentDTO:',
+        scheduleAppointmentDTO,
+      );
       const { insuredId, scheduleId, countryISO } = scheduleAppointmentDTO;
 
       await scheduleAppointmentUseCase.execute(

@@ -44,8 +44,8 @@ provider:
         - sqs:DeleteMessage
         - sqs:GetQueueAttributes
       Resource:
-        - 'arn:aws:sqs:us-east-1:613859881893:QueuePE'
-        - 'arn:aws:sqs:us-east-1:613859881893:QueueCL'
+        - 'arn:aws:sqs:us-east-1:${env:AWS_ACCOUNT_ID}:QueuePE'
+        - 'arn:aws:sqs:us-east-1:${env:AWS_ACCOUNT_ID}:QueueCL'
 
     - Effect: Allow
       Action:
@@ -57,8 +57,8 @@ provider:
         - rds:DescribeDBInstances
         - rds:Connect
       Resource:
-        - arn:aws:rds:us-east-1:613859881893:db:mysql_pe
-        - arn:aws:rds:us-east-1:613859881893:db:mysql_cl
+        - arn:aws:rds:us-east-1:${env:AWS_ACCOUNT_ID}:db:mysql_pe
+        - arn:aws:rds:us-east-1:${env:AWS_ACCOUNT_ID}:db:mysql_cl
 
 functions:
   scheduleAppointment:
@@ -67,33 +67,30 @@ functions:
       - http:
           path: appointments
           method: post
-      - http:
-          path: appointments
-          method: get
 
   appointmentPe:
     handler: src/infrastructure/handlers/appointment_pe.handler
     events:
       - sqs:
-          arn: arn:aws:sqs:us-east-1:613859881893:QueuePE
+          arn: arn:aws:sqs:us-east-1:${env:AWS_ACCOUNT_ID}:QueuePE
           batchSize: 5
     environment:
-      DB_HOST: mysql-pe.cmx6cke86tif.us-east-1.rds.amazonaws.com
-      DB_USER: admin
-      DB_PASSWORD: adminsimon123!
-      DB_NAME: mysql-pe
+      DB_HOST: ${env:DB_HOST_PE}
+      DB_USER: ${env:DB_USER_PE}
+      DB_PASSWORD: ${env:DB_PASSWORD_PE}
+      DB_NAME: ${env:DB_NAME_PE}
 
   appointmentCl:
     handler: src/infrastructure/handlers/appointment_cl.handler
     events:
       - sqs:
-          arn: arn:aws:sqs:us-east-1:613859881893:QueueCL
+          arn: arn:aws:sqs:us-east-1:${env:AWS_ACCOUNT_ID}:QueueCL
           batchSize: 5
     environment:
-      DB_HOST: mysql-cl.cmx6cke86tif.us-east-1.rds.amazonaws.com
-      DB_USER: admin
-      DB_PASSWORD: adminsimon123!
-      DB_NAME: mysql-cl
+      DB_HOST: ${env:DB_HOST_CL}
+      DB_USER: ${env:DB_USER_CL}
+      DB_PASSWORD: ${env:DB_PASSWORD_CL}
+      DB_NAME: ${env:DB_NAME_CL}
 
 resources:
   Resources:
@@ -210,6 +207,7 @@ resources:
 
 plugins:
   - serverless-offline
+  - serverless-dotenv-plugin
 
 custom:
   esbuild:
