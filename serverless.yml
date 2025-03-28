@@ -1,0 +1,225 @@
+org: simdav26 # Tu organización en Serverless Dashboard
+app: reto-backend-nodejs-rimac # Nombre de la aplicación en Serverless Dashboard
+service: reto-backend-nodejs-rimac
+
+provider:
+  name: aws
+  runtime: nodejs22.x
+  region: us-east-1
+  stage: ${opt:stage, 'dev'}
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - logs:CreateLogGroup
+        - logs:CreateLogStream
+        - logs:PutLogEvents
+      Resource: arn:aws:logs:*:*:*
+      # Opcional: Si quieres dar permisos a todas las tablas en la región
+    - Effect: Allow
+      Action:
+        - dynamodb:PutItem
+        - dynamodb:GetItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+        - dynamodb:Scan
+        - dynamodb:Query
+        - dynamodb:BatchGetItem
+        - dynamodb:BatchWriteItem
+        - dynamodb:ListTables
+      Resource: '*'
+    # Permisos para SNS
+    - Effect: Allow
+      Action:
+        - sns:Publish # Enviar mensajes a un topic
+        - sns:Subscribe # Suscribirse a un topic
+        - sns:Unsubscribe # Cancelar suscripción
+        - sns:ListSubscriptionsByTopic # Ver suscripciones a un topic
+        - sns:ListTopics
+      Resource: '*'
+
+    - Effect: Allow
+      Action:
+        - sqs:SendMessage
+        - sqs:ReceiveMessage
+        - sqs:DeleteMessage
+        - sqs:GetQueueAttributes
+      Resource:
+        - 'arn:aws:sqs:us-east-1:613859881893:QueuePE'
+        - 'arn:aws:sqs:us-east-1:613859881893:QueueCL'
+
+    - Effect: Allow
+      Action:
+        - sqs:ListQueues
+      Resource: '*'
+
+    - Effect: Allow
+      Action:
+        - rds:DescribeDBInstances
+        - rds:Connect
+      Resource:
+        - arn:aws:rds:us-east-1:613859881893:db:mysql_pe
+        - arn:aws:rds:us-east-1:613859881893:db:mysql_cl
+
+functions:
+  scheduleAppointment:
+    handler: src/infrastructure/handlers/appointment.handler
+    events:
+      - http:
+          path: appointments
+          method: post
+
+  appointmentPe:
+    handler: src/infrastructure/handlers/appointment_pe.handler
+    events:
+      - sqs:
+          arn: arn:aws:sqs:us-east-1:613859881893:QueuePE
+          batchSize: 5
+    environment:
+      DB_HOST: mysql-pe.cmx6cke86tif.us-east-1.rds.amazonaws.com
+      DB_USER: admin
+      DB_PASSWORD: adminsimon123!
+      DB_NAME: mysql-pe
+
+  appointmentCl:
+    handler: src/infrastructure/handlers/appointment_cl.handler
+    events:
+      - sqs:
+          arn: arn:aws:sqs:us-east-1:613859881893:QueueCL
+          batchSize: 5
+    environment:
+      DB_HOST: mysql-cl.cmx6cke86tif.us-east-1.rds.amazonaws.com
+      DB_USER: admin
+      DB_PASSWORD: adminsimon123!
+      DB_NAME: mysql-cl
+
+resources:
+  Resources:
+    AppointmentsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: AppointmentsTable
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          # Only include attributes used in KeySchema and GlobalSecondaryIndexes
+          - AttributeName: insuredId
+            AttributeType: S
+          - AttributeName: scheduleId
+            AttributeType: N
+          - AttributeName: countryISO
+            AttributeType: S
+          - AttributeName: status
+            AttributeType: S
+          - AttributeName: createdAt
+            AttributeType: S
+        KeySchema:
+          # Primary key definition
+          - AttributeName: insuredId
+            KeyType: HASH
+          - AttributeName: scheduleId
+            KeyType: RANGE
+        GlobalSecondaryIndexes:
+          # Secondary index for status
+          - IndexName: StatusIndex
+            KeySchema:
+              - AttributeName: status
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+          - IndexName: CountryIndex
+            KeySchema:
+              - AttributeName: countryISO
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+          # Secondary index for createdAt
+          - IndexName: CreatedAtIndex
+            KeySchema:
+              - AttributeName: createdAt
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+    SNSTopic:
+      Type: AWS::SNS::Topic
+      Properties:
+        TopicName: RoutingSNSTopic
+
+    SQSQueuePE:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: QueuePE
+
+    SQSQueueCL:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: QueueCL
+
+    # Política de permisos para las colas SQS
+    SQSPolicy:
+      Type: AWS::SQS::QueuePolicy
+      Properties:
+        Queues:
+          - !Ref SQSQueuePE
+          - !Ref SQSQueueCL
+        PolicyDocument:
+          Statement:
+            - Effect: Allow
+              Principal: '*'
+              Action:
+                - sqs:SendMessage
+                - sqs:ReceiveMessage
+                - sqs:DeleteMessage
+                - sqs:GetQueueAttributes
+              Resource: !GetAtt SQSQueuePE.Arn
+              Condition:
+                ArnEquals:
+                  aws:SourceArn: !Ref SNSTopic
+            - Effect: Allow
+              Principal: '*'
+              Action:
+                - sqs:SendMessage
+                - sqs:ReceiveMessage
+                - sqs:DeleteMessage
+                - sqs:GetQueueAttributes
+              Resource: !GetAtt SQSQueueCL.Arn
+              Condition:
+                ArnEquals:
+                  aws:SourceArn: !Ref SNSTopic
+
+    SubscriptionPE:
+      Type: AWS::SNS::Subscription
+      Properties:
+        TopicArn: !Ref SNSTopic
+        Protocol: sqs
+        Endpoint: !GetAtt SQSQueuePE.Arn
+        FilterPolicy:
+          country:
+            - 'pe'
+
+    SubscriptionCL:
+      Type: AWS::SNS::Subscription
+      Properties:
+        TopicArn: !Ref SNSTopic
+        Protocol: sqs
+        Endpoint: !GetAtt SQSQueueCL.Arn
+        FilterPolicy:
+          country:
+            - 'cl'
+
+plugins:
+  - serverless-offline
+
+custom:
+  esbuild:
+    bundle: true
+    minify: true
+    sourcemap: false
+
+package:
+  patterns:
+    - '!node_modules/aws-sdk/**' # AWS SDK ya está disponible en Lambda
+    - '!node_modules/typescript/**'
+    - '!node_modules/@types/**'
+    - '!test/**' # Excluir pruebas si no son necesarias
+    - '!docs/**' # Excluir documentación
+    - 'dist/**' # Solo empaquetar código transpilado
+    - 'package.json'
