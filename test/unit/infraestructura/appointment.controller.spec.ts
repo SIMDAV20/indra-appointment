@@ -104,7 +104,7 @@ describe('AppointmentController', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/appointments',
-        payload: {}, // Enviar datos inválidos
+        payload: {}, // Datos inválidos
       });
 
       expect(response.statusCode).toBe(400);

@@ -20,6 +20,10 @@
     "strictBindCallApply": false,
     "noFallthroughCasesInSwitch": false,
     "strict": true,
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "paths": {
+      "src/*": ["src/*"]
+    }
   }
 }

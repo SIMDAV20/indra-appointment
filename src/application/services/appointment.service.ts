@@ -24,10 +24,6 @@ export class AppointmentService {
   static async getAppointment(insuredId: string) {
     try {
       const appointment = await appointmentRepository.find(insuredId);
-      if (!appointment) {
-        console.log(`No se encontró cita para insuredId: ${insuredId}`);
-      }
-
       return appointment;
     } catch (error) {
       console.error('Error en el servicio AppointmentService:', error);
@@ -37,10 +33,6 @@ export class AppointmentService {
 
   static async scheduleAppointment(scheduleAppointmentDTO: AppointmentDTO) {
     try {
-      console.log(
-        '🚀 ~ AppointmentService ~ scheduleAppointment ~ scheduleAppointmentDTO:',
-        scheduleAppointmentDTO,
-      );
       const { insuredId, scheduleId, countryISO } = scheduleAppointmentDTO;
 
       await scheduleAppointmentUseCase.execute(
