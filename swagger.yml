@@ -1,0 +1,128 @@
+openapi: 3.0.0
+info:
+  title: API de Citas
+  version: 1.0.0
+  description: API para manejar las citas de asegurados
+
+servers:
+  - url: http://localhost:3000/docs
+    description: Servidor local de desarrollo
+
+paths:
+  /appointments/{insuredId}:
+    get:
+      tags:
+        - Appointments
+      summary: Obtiene una cita por ID del asegurado
+      parameters:
+        - name: insuredId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID del asegurado
+      responses:
+        '200':
+          description: Cita encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Appointment'
+        '404':
+          description: Cita no encontrada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Cita no encontrada
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Error interno del servidor
+
+  /appointments:
+    post:
+      tags:
+        - Appointments
+      summary: Programa una nueva cita
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Appointment'
+      responses:
+        '201':
+          description: Cita creada exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Cita agendada y enviada a SNS
+        '400':
+          description: Datos inválidos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Datos inválidos
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Error interno del servidor
+
+components:
+  schemas:
+    Appointment:
+      type: object
+      required:
+        - insuredId
+        - scheduleId
+        - countryISO
+        - status
+        - createdAt
+      properties:
+        insuredId:
+          type: string
+          description: ID del asegurado
+        scheduleId:
+          type: integer
+          description: ID del horario
+        countryISO:
+          type: string
+          enum:
+            - PE
+            - CL
+          description: Código ISO del país
+        status:
+          type: string
+          enum:
+            - PENDING
+            - CONFIRMED
+            - CANCELLED
+          description: Estado de la cita
+        createdAt:
+          type: string
+          format: date-time
+          description: Fecha de creación de la cita
